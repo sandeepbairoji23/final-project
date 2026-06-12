@@ -12,8 +12,12 @@ st.title("Student Performance Dashboard")
 # Load the CSV file
 try:
     students = pd.read_csv("Student_database.csv")
-except:
-    st.error("CSV file not found!")
+    students["Math"] = pd.to_numeric(students["Math"], errors="coerce")
+    students["Science"] = pd.to_numeric(students["Science"], errors="coerce")
+    students["English"] = pd.to_numeric(students["English"], errors="coerce")
+    students["Attendance"] = pd.to_numeric(students["Attendance"], errors="coerce")
+except Exception as e:
+    st.error(f"Error loading CSV: {e}")
     st.stop()
 
 # Calculate total marks
@@ -187,10 +191,21 @@ elif option == "EDA Graphs":
     st.write("## 3. Marks Spread Comparison (Box Plot)")
     
     fig3, ax3 = plt.subplots()
-    data_for_box = [students["Math"], students["Science"], students["English"]]
-    ax3.boxplot(data_for_box, labels=["Math", "Science", "English"])
+
+    data_for_box = [
+    students["Math"].dropna(),
+    students["Science"].dropna(),
+    students["English"].dropna()
+]
+
+    ax3.boxplot(
+    data_for_box,
+    tick_labels=["Math", "Science", "English"]
+)
+
     ax3.set_ylabel("Marks")
     ax3.set_title("Marks Distribution Box Plot")
+
     st.pyplot(fig3)
     
     st.markdown("---")
