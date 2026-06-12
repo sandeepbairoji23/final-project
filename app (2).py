@@ -12,10 +12,6 @@ st.title("Student Performance Dashboard")
 # Load the CSV file
 try:
     students = pd.read_csv("Student_database.csv")
-    students["Math"] = pd.to_numeric(students["Math"], errors="coerce")
-    students["Science"] = pd.to_numeric(students["Science"], errors="coerce")
-    students["English"] = pd.to_numeric(students["English"], errors="coerce")
-    students["Attendance"] = pd.to_numeric(students["Attendance"], errors="coerce")
 except Exception as e:
     st.error(f"Error loading CSV: {e}")
     st.stop()
@@ -64,7 +60,6 @@ elif option == "Search Student":
 elif option == "Top Performer":
     st.subheader("Top Performer")
     
-    # Find student with highest total marks
     best_student = students.loc[students["Total"].idxmax()]
     
     st.success(f"Student Name: {best_student['Name']}")
@@ -75,18 +70,15 @@ elif option == "Top Performer":
 elif option == "Subject Statistics":
     st.subheader("Subject Wise Averages")
     
-    # Calculate average for each subject
     math_average = students["Math"].mean()
     science_average = students["Science"].mean()
     english_average = students["English"].mean()
     
-    # Display in three columns
     col1, col2, col3 = st.columns(3)
     col1.metric("Math Average", round(math_average, 2))
     col2.metric("Science Average", round(science_average, 2))
     col3.metric("English Average", round(english_average, 2))
     
-    # Display as bar chart
     chart_data = pd.DataFrame(
         {
             "Average": [math_average, science_average, english_average]
@@ -105,7 +97,6 @@ elif option == "Attendance Statistics":
     st.metric("Average Attendance", round(avg_attendance, 2))
     st.metric("Highest Attendance", max_attendance)
     
-    # Bar chart for each student attendance
     attendance_chart = students.set_index("Name")["Attendance"]
     st.bar_chart(attendance_chart)
 
@@ -113,7 +104,6 @@ elif option == "Attendance Statistics":
 elif option == "Add Student":
     st.subheader("Add a New Student")
     
-    # Input fields
     student_id = st.number_input("Student ID", step=1)
     name = st.text_input("Student Name")
     age = st.number_input("Age", step=1)
@@ -123,9 +113,7 @@ elif option == "Add Student":
     english_marks = st.number_input("English Marks", 0, 100)
     attendance = st.number_input("Attendance", 0, 100)
     
-    # Add button
     if st.button("Add Student"):
-        # Create new row
         new_row = pd.DataFrame([{
             "Student_ID": student_id,
             "Name": name,
@@ -137,10 +125,7 @@ elif option == "Add Student":
             "Attendance": attendance
         }])
         
-        # Add to dataframe
         students = pd.concat([students, new_row], ignore_index=True)
-        
-        # Save to CSV
         students.to_csv("Student_database.csv", index=False)
         
         st.success("Student added successfully!")
@@ -191,26 +176,22 @@ elif option == "EDA Graphs":
     st.write("## 3. Marks Spread Comparison (Box Plot)")
     
     fig3, ax3 = plt.subplots()
-
-    data_for_box = [
-    students["Math"].dropna(),
-    students["Science"].dropna(),
-    students["English"].dropna()
-]
-
-    ax3.boxplot(
-    data_for_box,
-    tick_labels=["Math", "Science", "English"]
-)
-
+    
+    math_data = students["Math"].dropna()
+    science_data = students["Science"].dropna()
+    english_data = students["English"].dropna()
+    
+    data_for_box = [math_data, science_data, english_data]
+    
+    ax3.boxplot(data_for_box, labels=["Math", "Science", "English"])
     ax3.set_ylabel("Marks")
     ax3.set_title("Marks Distribution Box Plot")
-
+    
     st.pyplot(fig3)
     
     st.markdown("---")
     
-    # Graph 4: Scatter Plot (Attendance vs Average)
+    # Graph 4: Scatter Plot
     st.write("## 4. Attendance vs Average Marks")
     
     fig4, ax4 = plt.subplots()
