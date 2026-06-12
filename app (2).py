@@ -183,7 +183,20 @@ elif option == "EDA Graphs":
     
     data_for_box = [math_data, science_data, english_data]
     
-    ax3.boxplot(data_for_box, labels=["Math", "Science", "English"])
+    fig3, ax3 = plt.subplots()
+
+    data_for_box = [
+    students["Math"].dropna(),
+    students["Science"].dropna(),
+    students["English"].dropna()
+]
+
+ax3.boxplot(
+    data_for_box,
+    tick_labels=["Math", "Science", "English"]
+)
+
+st.pyplot(fig3)
     ax3.set_ylabel("Marks")
     ax3.set_title("Marks Distribution Box Plot")
     
