@@ -3,26 +3,27 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-# Set page configuration
+# Page config
 st.set_page_config(page_title="Student Performance Dashboard", layout="wide")
 
-# Title
-st.title("Student Performance Dashboard")
+st.title("🎓 Student Performance Dashboard")
 
-# Load the CSV file
+# Load CSV
 try:
     students = pd.read_csv("Student_database.csv")
 except Exception as e:
     st.error(f"Error loading CSV: {e}")
     st.stop()
 
-# Calculate total marks
-students["Total"] = students["Math"] + students["Science"] + students["English"]
+# Convert to numeric (IMPORTANT FIX)
+for col in ["Math", "Science", "English", "Attendance"]:
+    students[col] = pd.to_numeric(students[col], errors="coerce")
 
-# Calculate average
+# Calculations
+students["Total"] = students["Math"] + students["Science"] + students["English"]
 students["Average"] = students["Total"] / 3
 
-# Create sidebar menu
+# Sidebar menu
 option = st.sidebar.selectbox(
     "Select an option",
     [
@@ -36,203 +37,165 @@ option = st.sidebar.selectbox(
     ]
 )
 
-# Display Students
+# ---------------- DISPLAY ----------------
 if option == "Display Students":
     st.subheader("All Students")
     st.dataframe(students)
-    st.metric("Total Number of Students", len(students))
+    st.metric("Total Students", len(students))
 
-# Search Student
+# ---------------- SEARCH ----------------
 elif option == "Search Student":
-    st.subheader("Search for a Student")
-    
+    st.subheader("Search Student")
+
     student_id = st.number_input("Enter Student ID", step=1)
-    
+
     if st.button("Search"):
         found = students[students["Student_ID"] == student_id]
-        
-        if len(found) > 0:
+
+        if not found.empty:
             st.dataframe(found)
         else:
             st.warning("Student not found")
 
-# Top Performer
+# ---------------- TOP PERFORMER ----------------
 elif option == "Top Performer":
     st.subheader("Top Performer")
-    
-    best_student = students.loc[students["Total"].idxmax()]
-    
-    st.success(f"Student Name: {best_student['Name']}")
-    st.write(f"Total Marks: {best_student['Total']}")
-    st.write(f"Average: {best_student['Average']:.2f}")
 
-# Subject Statistics
+    best = students.loc[students["Total"].idxmax()]
+
+    st.success(best["Name"])
+    st.write(f"Total: {best['Total']}")
+    st.write(f"Average: {best['Average']:.2f}")
+
+# ---------------- SUBJECT STATS ----------------
 elif option == "Subject Statistics":
-    st.subheader("Subject Wise Averages")
-    
-    math_average = students["Math"].mean()
-    science_average = students["Science"].mean()
-    english_average = students["English"].mean()
-    
+    st.subheader("Subject Averages")
+
     col1, col2, col3 = st.columns(3)
-    col1.metric("Math Average", round(math_average, 2))
-    col2.metric("Science Average", round(science_average, 2))
-    col3.metric("English Average", round(english_average, 2))
-    
-    chart_data = pd.DataFrame(
-        {
-            "Average": [math_average, science_average, english_average]
-        },
-        index=["Math", "Science", "English"]
-    )
-    st.bar_chart(chart_data)
 
-# Attendance Statistics
+    col1.metric("Math", round(students["Math"].mean(), 2))
+    col2.metric("Science", round(students["Science"].mean(), 2))
+    col3.metric("English", round(students["English"].mean(), 2))
+
+# ---------------- ATTENDANCE ----------------
 elif option == "Attendance Statistics":
-    st.subheader("Attendance Statistics")
-    
-    avg_attendance = students["Attendance"].mean()
-    max_attendance = students["Attendance"].max()
-    
-    st.metric("Average Attendance", round(avg_attendance, 2))
-    st.metric("Highest Attendance", max_attendance)
-    
-    attendance_chart = students.set_index("Name")["Attendance"]
-    st.bar_chart(attendance_chart)
+    st.subheader("Attendance Stats")
 
-# Add Student
+    st.metric("Average Attendance", round(students["Attendance"].mean(), 2))
+    st.metric("Max Attendance", students["Attendance"].max())
+
+    st.bar_chart(students.set_index("Name")["Attendance"])
+
+# ---------------- ADD STUDENT ----------------
 elif option == "Add Student":
-    st.subheader("Add a New Student")
-    
-    student_id = st.number_input("Student ID", step=1)
-    name = st.text_input("Student Name")
+    st.subheader("Add Student")
+
+    sid = st.number_input("Student ID", step=1)
+    name = st.text_input("Name")
     age = st.number_input("Age", step=1)
     gender = st.selectbox("Gender", ["Male", "Female"])
-    math_marks = st.number_input("Math Marks", 0, 100)
-    science_marks = st.number_input("Science Marks", 0, 100)
-    english_marks = st.number_input("English Marks", 0, 100)
+
+    math = st.number_input("Math", 0, 100)
+    science = st.number_input("Science", 0, 100)
+    english = st.number_input("English", 0, 100)
     attendance = st.number_input("Attendance", 0, 100)
-    
-    if st.button("Add Student"):
-        new_row = pd.DataFrame([{
-            "Student_ID": student_id,
+
+    if st.button("Add"):
+        new = pd.DataFrame([{
+            "Student_ID": sid,
             "Name": name,
             "Age": age,
             "Gender": gender,
-            "Math": math_marks,
-            "Science": science_marks,
-            "English": english_marks,
+            "Math": math,
+            "Science": science,
+            "English": english,
             "Attendance": attendance
         }])
-        
-        students = pd.concat([students, new_row], ignore_index=True)
+
+        students = pd.concat([students, new], ignore_index=True)
         students.to_csv("Student_database.csv", index=False)
-        
+
         st.success("Student added successfully!")
 
-# EDA Graphs
+# ---------------- EDA ----------------
 elif option == "EDA Graphs":
-    st.subheader("Data Analysis Graphs")
-    
-    # Graph 1: Subject Average Comparison
-    st.write("## 1. Subject Average Comparison")
-    
-    fig1, ax1 = plt.subplots()
+    st.subheader("EDA Analysis")
+
+    # 1 Bar chart
+    st.write("Subject Averages")
+
     subjects = ["Math", "Science", "English"]
-    averages = [students["Math"].mean(), students["Science"].mean(), students["English"].mean()]
-    
-    ax1.bar(subjects, averages, color=['blue', 'green', 'orange'])
-    ax1.set_ylabel("Average Marks")
-    ax1.set_title("Subject Averages")
+    averages = [
+        students["Math"].mean(),
+        students["Science"].mean(),
+        students["English"].mean()
+    ]
+
+    fig1, ax1 = plt.subplots()
+    ax1.bar(subjects, averages)
     st.pyplot(fig1)
-    
+
     st.markdown("---")
-    
-    # Graph 2: Marks Distribution
-    st.write("## 2. Marks Distribution (Histogram)")
-    
-    fig2, axes = plt.subplots(1, 3, figsize=(12, 4))
-    
-    axes[0].hist(students["Math"], bins=8, color='blue', edgecolor='black')
-    axes[0].set_title("Math Marks Distribution")
-    axes[0].set_xlabel("Marks")
-    axes[0].set_ylabel("Number of Students")
-    
-    axes[1].hist(students["Science"], bins=8, color='green', edgecolor='black')
-    axes[1].set_title("Science Marks Distribution")
-    axes[1].set_xlabel("Marks")
-    axes[1].set_ylabel("Number of Students")
-    
-    axes[2].hist(students["English"], bins=8, color='orange', edgecolor='black')
-    axes[2].set_title("English Marks Distribution")
-    axes[2].set_xlabel("Marks")
-    axes[2].set_ylabel("Number of Students")
-    
+
+    # 2 Histogram
+    st.write("Distribution")
+
+    fig2, ax2 = plt.subplots()
+    ax2.hist(students["Average"], bins=10)
     st.pyplot(fig2)
-    
+
     st.markdown("---")
-    
-    # Graph 3: Box Plot
-    st.write("## 3. Marks Spread Comparison (Box Plot)")
-    
-    fig3, ax3 = plt.subplots()
-    
-    math_data = students["Math"].dropna()
-    science_data = students["Science"].dropna()
-    english_data = students["English"].dropna()
-    
-    data_for_box = [math_data, science_data, english_data]
-    
+
+    # 3 Box plot (FIXED)
+    st.write("Box Plot")
+
     fig3, ax3 = plt.subplots()
 
-    data_for_box = [
-    students["Math"].dropna(),
-    students["Science"].dropna(),
-    students["English"].dropna()
-]
+    data = [
+        students["Math"].dropna(),
+        students["Science"].dropna(),
+        students["English"].dropna()
+    ]
 
-ax3.boxplot(
-    data_for_box,
-    tick_labels=["Math", "Science", "English"]
-)
+    ax3.boxplot(data, tick_labels=["Math", "Science", "English"])
 
-st.pyplot(fig3)
     ax3.set_ylabel("Marks")
-    ax3.set_title("Marks Distribution Box Plot")
-    
+    ax3.set_title("Marks Distribution")
+
     st.pyplot(fig3)
-    
+
     st.markdown("---")
-    
-    # Graph 4: Scatter Plot
-    st.write("## 4. Attendance vs Average Marks")
-    
+
+    # 4 Scatter
+    st.write("Attendance vs Average")
+
     fig4, ax4 = plt.subplots()
-    ax4.scatter(students["Attendance"], students["Average"], color='blue', s=100)
-    ax4.set_xlabel("Attendance %")
-    ax4.set_ylabel("Average Marks")
-    ax4.set_title("Attendance vs Average Marks")
+    ax4.scatter(students["Attendance"], students["Average"])
     st.pyplot(fig4)
-    
+
     st.markdown("---")
-    
-    # Graph 5: Correlation Heatmap
-    st.write("## 5. Correlation Heatmap")
-    
+
+    # 5 Heatmap
+    st.write("Correlation Heatmap")
+
     fig5, ax5 = plt.subplots()
-    correlation = students[["Math", "Science", "English", "Attendance", "Total", "Average"]].corr()
-    sns.heatmap(correlation, annot=True, fmt=".2f", ax=ax5, cmap="Blues")
+
+    corr = students[["Math", "Science", "English", "Attendance", "Total", "Average"]].corr()
+
+    sns.heatmap(corr, annot=True, ax=ax5, cmap="Blues")
+
     st.pyplot(fig5)
-    
+
     st.markdown("---")
-    
-    # Graph 6: Gender Distribution
-    st.write("## 6. Gender Distribution (Pie Chart)")
-    
+
+    # 6 Pie chart
+    st.write("Gender Distribution")
+
     fig6, ax6 = plt.subplots()
-    gender_counts = students["Gender"].value_counts()
-    ax6.pie(gender_counts.values, labels=gender_counts.index, autopct="%1.1f%%")
-    ax6.set_title("Gender Distribution")
+    gender = students["Gender"].value_counts()
+
+    ax6.pie(gender.values, labels=gender.index, autopct="%1.1f%%")
+
     st.pyplot(fig6)
 
 # Footer
