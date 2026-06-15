@@ -3,27 +3,22 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-# Page config
 st.set_page_config(page_title="Student Performance Dashboard", layout="wide")
 
-st.title("🎓 Student Performance Dashboard")
+st.title("Student Performance Dashboard")
 
-# Load CSV
 try:
     students = pd.read_csv("Student_database.csv")
 except Exception as e:
     st.error(f"Error loading CSV: {e}")
     st.stop()
 
-# Convert to numeric (IMPORTANT FIX)
 for col in ["Math", "Science", "English", "Attendance"]:
     students[col] = pd.to_numeric(students[col], errors="coerce")
 
-# Calculations
 students["Total"] = students["Math"] + students["Science"] + students["English"]
 students["Average"] = students["Total"] / 3
 
-# Sidebar menu
 option = st.sidebar.selectbox(
     "Select an option",
     [
@@ -37,13 +32,11 @@ option = st.sidebar.selectbox(
     ]
 )
 
-# ---------------- DISPLAY ----------------
 if option == "Display Students":
     st.subheader("All Students")
     st.dataframe(students)
     st.metric("Total Students", len(students))
 
-# ---------------- SEARCH ----------------
 elif option == "Search Student":
     st.subheader("Search Student")
 
@@ -57,7 +50,6 @@ elif option == "Search Student":
         else:
             st.warning("Student not found")
 
-# ---------------- TOP PERFORMER ----------------
 elif option == "Top Performer":
     st.subheader("Top Performer")
 
@@ -67,7 +59,6 @@ elif option == "Top Performer":
     st.write(f"Total: {best['Total']}")
     st.write(f"Average: {best['Average']:.2f}")
 
-# ---------------- SUBJECT STATS ----------------
 elif option == "Subject Statistics":
     st.subheader("Subject Averages")
 
@@ -77,7 +68,6 @@ elif option == "Subject Statistics":
     col2.metric("Science", round(students["Science"].mean(), 2))
     col3.metric("English", round(students["English"].mean(), 2))
 
-# ---------------- ATTENDANCE ----------------
 elif option == "Attendance Statistics":
     st.subheader("Attendance Stats")
 
@@ -86,7 +76,6 @@ elif option == "Attendance Statistics":
 
     st.bar_chart(students.set_index("Name")["Attendance"])
 
-# ---------------- ADD STUDENT ----------------
 elif option == "Add Student":
     st.subheader("Add Student")
 
@@ -117,11 +106,10 @@ elif option == "Add Student":
 
         st.success("Student added successfully!")
 
-# ---------------- EDA ----------------
 elif option == "EDA Graphs":
     st.subheader("EDA Analysis")
 
-    # 1 Bar chart
+    
     st.write("Subject Averages")
 
     subjects = ["Math", "Science", "English"]
@@ -137,7 +125,7 @@ elif option == "EDA Graphs":
 
     st.markdown("---")
 
-    # 2 Histogram
+    
     st.write("Distribution")
 
     fig2, ax2 = plt.subplots()
@@ -146,7 +134,7 @@ elif option == "EDA Graphs":
 
     st.markdown("---")
 
-    # 3 Box plot (FIXED)
+    
     st.write("Box Plot")
 
     fig3, ax3 = plt.subplots()
@@ -166,7 +154,7 @@ elif option == "EDA Graphs":
 
     st.markdown("---")
 
-    # 4 Scatter
+    
     st.write("Attendance vs Average")
 
     fig4, ax4 = plt.subplots()
@@ -175,7 +163,7 @@ elif option == "EDA Graphs":
 
     st.markdown("---")
 
-    # 5 Heatmap
+    
     st.write("Correlation Heatmap")
 
     fig5, ax5 = plt.subplots()
@@ -188,7 +176,7 @@ elif option == "EDA Graphs":
 
     st.markdown("---")
 
-    # 6 Pie chart
+    
     st.write("Gender Distribution")
 
     fig6, ax6 = plt.subplots()
@@ -198,6 +186,5 @@ elif option == "EDA Graphs":
 
     st.pyplot(fig6)
 
-# Footer
 st.markdown("---")
 st.write("Student Performance Management System")
