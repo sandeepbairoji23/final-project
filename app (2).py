@@ -27,11 +27,17 @@ students["Total"] = students["Math"] + students["Science"] + students["English"]
 students["Average"] = students["Total"] / 3
 students["Result"] = students["Average"].apply(lambda x: 1 if x >= 40 else 0)
 
+if students["Result"].nunique() < 2:
+    st.error("Need both PASS and FAIL students for ML training")
+    st.stop()
+
 def train_model(data):
     X = data[["Math", "Science", "English", "Attendance"]]
     y = data["Result"]
 
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.2, random_state=42
+    )
 
     model = RandomForestClassifier()
     model.fit(X_train, y_train)
@@ -47,7 +53,16 @@ st.sidebar.success(f"Accuracy {acc:.2f}")
 
 option = st.sidebar.selectbox(
     "Select",
-    ["Display Students", "Search Student", "Top Performer", "Subject Statistics", "Attendance Statistics", "Add Student", "EDA Graphs", "ML Prediction"]
+    [
+        "Display Students",
+        "Search Student",
+        "Top Performer",
+        "Subject Statistics",
+        "Attendance Statistics",
+        "Add Student",
+        "EDA Graphs",
+        "ML Prediction"
+    ]
 )
 
 if option == "Display Students":
@@ -108,7 +123,8 @@ elif option == "Add Student":
 
 elif option == "EDA Graphs":
     fig, ax = plt.subplots()
-    ax.bar(["Math", "Science", "English"], [students["Math"].mean(), students["Science"].mean(), students["English"].mean()])
+    ax.bar(["Math", "Science", "English"],
+           [students["Math"].mean(), students["Science"].mean(), students["English"].mean()])
     st.pyplot(fig)
 
     fig, ax = plt.subplots()
@@ -140,12 +156,18 @@ elif option == "ML Prediction":
 
     if st.button("Predict"):
         inp = [[math, science, english, attendance]]
+
         pred = model.predict(inp)[0]
-        prob = model.predict_proba(inp)[0][1]
+
+        proba = model.predict_proba(inp)[0]
+        prob = proba[1] if len(proba) > 1 else proba[0]
 
         if pred == 1:
             st.success("PASS")
         else:
             st.error("FAIL")
 
-        st.write(prob)
+        st.write(f"Probability: {prob:.2f}")
+
+st.markdown("---")
+st.write("Student Performance Dashboard + ML")
