@@ -9,3 +9,11 @@ Student_ID,Name,Age,Gender,Math,Science,English,Attendance,Grade,Result
 108,Ava,18,Female,88,85,87,92,B,1
 109,William,19,Male,60,66,64,82,C,1
 110,Isabella,17,Female,91,89,93,96,A,1
+111,Noah,18,Male,35,30,28,60,D,0
+112,Mia,17,Female,40,38,42,70,D,0
+113,Ethan,19,Male,25,32,20,55,F,0
+114,Charlotte,18,Female,45,40,38,65,D,0
+115,Liam,18,Male,50,45,40,75,C,0
+116,Amelia,17,Female,38,35,30,58,F,0
+117,Benjamin,19,Male,20,25,22,50,F,0
+118,Harper,18,Female,48,50,44,72,C,0
