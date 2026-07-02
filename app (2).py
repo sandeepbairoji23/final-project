@@ -1,173 +1,179 @@
 import streamlit as st
 import pandas as pd
+import numpy as np
+
+# ML
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.neural_network import MLPClassifier
+from sklearn.metrics import accuracy_score
+
+# NLP
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
+
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-from sklearn.model_selection import train_test_split
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import accuracy_score
+# Optional GenAI (OpenAI)
+import openai
 
-st.set_page_config(page_title="Student Dashboard + ML", layout="wide")
-st.title("Student Performance Dashboard + ML")
+# -------------------------
+# UI CONFIG
+# -------------------------
+st.set_page_config(page_title="FULL AI SYSTEM", layout="wide")
+st.title("🚀 ALL-IN-ONE AI/ML + NLP + RAG + GENAI SYSTEM")
 
-try:
-    students = pd.read_csv("Student_database.csv")
-except:
-    st.error("Error loading file")
-    st.stop()
+# -------------------------
+# SESSION STATE
+# -------------------------
+if "chat" not in st.session_state:
+    st.session_state.chat = []
 
-students["Math"] = pd.to_numeric(students["Math"], errors="coerce")
-students["Science"] = pd.to_numeric(students["Science"], errors="coerce")
-students["English"] = pd.to_numeric(students["English"], errors="coerce")
-students["Attendance"] = pd.to_numeric(students["Attendance"], errors="coerce")
+# -------------------------
+# FILE UPLOAD
+# -------------------------
+file = st.file_uploader("Upload CSV Dataset", type=["csv"])
 
-students = students.dropna()
+if file:
+    df = pd.read_csv(file)
+    st.subheader("📊 Dataset")
+    st.dataframe(df.head())
 
-students["Total"] = students["Math"] + students["Science"] + students["English"]
-students["Average"] = students["Total"] / 3
-students["Result"] = students["Average"].apply(lambda x: 1 if x >= 40 else 0)
+    numeric_cols = df.select_dtypes(include=np.number).columns
 
-if students["Result"].nunique() < 2:
-    st.error("Need both PASS and FAIL students for ML training")
-    st.stop()
+    # -------------------------
+    # EDA
+    # -------------------------
+    st.subheader("📈 EDA")
+    if len(numeric_cols) > 0:
+        col = st.selectbox("Select column", numeric_cols)
+        fig, ax = plt.subplots()
+        sns.histplot(df[col], kde=True, ax=ax)
+        st.pyplot(fig)
 
-def train_model(data):
-    X = data[["Math", "Science", "English", "Attendance"]]
-    y = data["Result"]
+    # -------------------------
+    # ML MODEL
+    # -------------------------
+    st.subheader("🤖 MACHINE LEARNING (Random Forest)")
 
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.2, random_state=42
-    )
+    target = st.selectbox("Target column", df.columns)
 
-    model = RandomForestClassifier()
-    model.fit(X_train, y_train)
+    if st.button("Train ML Model"):
+        X = pd.get_dummies(df.drop(columns=[target]))
+        y = df[target]
 
-    pred = model.predict(X_test)
-    acc = accuracy_score(y_test, pred)
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
 
-    return model, acc
+        model = RandomForestClassifier()
+        model.fit(X_train, y_train)
 
-model, acc = train_model(students)
+        pred = model.predict(X_test)
 
-st.sidebar.success(f"Accuracy {acc:.2f}")
+        st.success("Accuracy: " + str(accuracy_score(y_test, pred)))
 
-option = st.sidebar.selectbox(
-    "Select",
-    [
-        "Display Students",
-        "Search Student",
-        "Top Performer",
-        "Subject Statistics",
-        "Attendance Statistics",
-        "Add Student",
-        "EDA Graphs",
-        "ML Prediction"
-    ]
-)
+    # -------------------------
+    # NEURAL NETWORK (MLP)
+    # -------------------------
+    st.subheader("🧠 NEURAL NETWORK (MLPClassifier)")
 
-if option == "Display Students":
-    st.dataframe(students)
-    st.metric("Total Students", len(students))
+    if st.button("Train Neural Network"):
+        X = pd.get_dummies(df.drop(columns=[target]))
+        y = df[target]
 
-elif option == "Search Student":
-    sid = st.number_input("ID", step=1)
-    if st.button("Search"):
-        res = students[students["Student_ID"] == sid]
-        if not res.empty:
-            st.dataframe(res)
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
+
+        nn = MLPClassifier(hidden_layer_sizes=(64, 32), max_iter=500)
+        nn.fit(X_train, y_train)
+
+        pred = nn.predict(X_test)
+
+        st.success("NN Accuracy: " + str(accuracy_score(y_test, pred)))
+
+    # -------------------------
+    # NLP MODULE
+    # -------------------------
+    st.subheader("📝 NLP (Text Similarity Engine)")
+
+    text_col = st.selectbox("Select TEXT column", df.columns)
+
+    if st.button("Run NLP Engine"):
+        texts = df[text_col].astype(str).tolist()
+
+        vectorizer = TfidfVectorizer()
+        tfidf = vectorizer.fit_transform(texts)
+
+        query = st.text_input("Ask query from dataset text")
+
+        if query:
+            q_vec = vectorizer.transform([query])
+            sim = cosine_similarity(q_vec, tfidf)
+
+            idx = np.argmax(sim)
+            st.write("Most similar text:")
+            st.success(texts[idx])
+
+    # -------------------------
+    # RAG (Simple Retrieval System)
+    # -------------------------
+    st.subheader("📚 RAG (Retrieval Augmented Generation - Simple)")
+
+    rag_col = st.selectbox("Select RAG TEXT column", df.columns)
+
+    if st.button("Build RAG Index"):
+        st.session_state.docs = df[rag_col].astype(str).tolist()
+
+        vectorizer = TfidfVectorizer()
+        st.session_state.vec = vectorizer.fit_transform(st.session_state.docs)
+        st.session_state.vectorizer = vectorizer
+
+        st.success("RAG index built!")
+
+    query = st.text_input("Ask RAG question")
+
+    if query and "docs" in st.session_state:
+        q_vec = st.session_state.vectorizer.transform([query])
+        sim = cosine_similarity(q_vec, st.session_state.vec)
+
+        idx = np.argmax(sim)
+        st.write("📌 Retrieved Answer:")
+        st.info(st.session_state.docs[idx])
+
+    # -------------------------
+    # GENAI CHATBOT
+    # -------------------------
+    st.subheader("🤖 GENAI CHATBOT")
+
+    api_key = st.text_input("OpenAI API Key", type="password")
+
+    for msg in st.session_state.chat:
+        st.chat_message(msg["role"]).write(msg["content"])
+
+    user_msg = st.chat_input("Ask AI anything...")
+
+    if user_msg:
+        st.session_state.chat.append({"role": "user", "content": user_msg})
+        st.chat_message("user").write(user_msg)
+
+        if api_key:
+            try:
+                openai.api_key = api_key
+
+                response = openai.ChatCompletion.create(
+                    model="gpt-3.5-turbo",
+                    messages=st.session_state.chat
+                )
+
+                bot = response["choices"][0]["message"]["content"]
+
+            except:
+                bot = "Error with OpenAI API"
+
         else:
-            st.warning("Not found")
+            bot = "Enter API key to use GenAI chatbot"
 
-elif option == "Top Performer":
-    best = students.loc[students["Total"].idxmax()]
-    st.success(best["Name"])
-    st.write(best["Total"])
-    st.write(f"{best['Average']:.2f}")
+        st.session_state.chat.append({"role": "assistant", "content": bot})
+        st.chat_message("assistant").write(bot)
 
-elif option == "Subject Statistics":
-    col1, col2, col3 = st.columns(3)
-    col1.metric("Math", round(students["Math"].mean(), 2))
-    col2.metric("Science", round(students["Science"].mean(), 2))
-    col3.metric("English", round(students["English"].mean(), 2))
-
-elif option == "Attendance Statistics":
-    st.metric("Avg Attendance", round(students["Attendance"].mean(), 2))
-    st.metric("Max Attendance", students["Attendance"].max())
-    st.bar_chart(students.set_index("Name")["Attendance"])
-
-elif option == "Add Student":
-    sid = st.number_input("ID", step=1)
-    name = st.text_input("Name")
-    age = st.number_input("Age", step=1)
-    gender = st.selectbox("Gender", ["Male", "Female"])
-    math = st.number_input("Math", 0, 100)
-    science = st.number_input("Science", 0, 100)
-    english = st.number_input("English", 0, 100)
-    attendance = st.number_input("Attendance", 0, 100)
-
-    if st.button("Add"):
-        new = pd.DataFrame([{
-            "Student_ID": sid,
-            "Name": name,
-            "Age": age,
-            "Gender": gender,
-            "Math": math,
-            "Science": science,
-            "English": english,
-            "Attendance": attendance
-        }])
-
-        students = pd.concat([students, new], ignore_index=True)
-        students.to_csv("Student_database.csv", index=False)
-        st.success("Added")
-
-elif option == "EDA Graphs":
-    fig, ax = plt.subplots()
-    ax.bar(["Math", "Science", "English"],
-           [students["Math"].mean(), students["Science"].mean(), students["English"].mean()])
-    st.pyplot(fig)
-
-    fig, ax = plt.subplots()
-    ax.hist(students["Average"], bins=10)
-    st.pyplot(fig)
-
-    fig, ax = plt.subplots()
-    ax.boxplot([students["Math"], students["Science"], students["English"]])
-    st.pyplot(fig)
-
-    fig, ax = plt.subplots()
-    ax.scatter(students["Attendance"], students["Average"])
-    st.pyplot(fig)
-
-    fig, ax = plt.subplots()
-    sns.heatmap(students[["Math", "Science", "English", "Attendance", "Total", "Average"]].corr(), ax=ax, annot=True)
-    st.pyplot(fig)
-
-    fig, ax = plt.subplots()
-    gender = students["Gender"].value_counts()
-    ax.pie(gender.values, labels=gender.index, autopct="%1.1f%%")
-    st.pyplot(fig)
-
-elif option == "ML Prediction":
-    math = st.number_input("Math", 0, 100)
-    science = st.number_input("Science", 0, 100)
-    english = st.number_input("English", 0, 100)
-    attendance = st.number_input("Attendance", 0, 100)
-
-    if st.button("Predict"):
-        inp = [[math, science, english, attendance]]
-
-        pred = model.predict(inp)[0]
-
-        proba = model.predict_proba(inp)[0]
-        prob = proba[1] if len(proba) > 1 else proba[0]
-
-        if pred == 1:
-            st.success("PASS")
-        else:
-            st.error("FAIL")
-
-        st.write(f"Probability: {prob:.2f}")
-
-st.markdown("---")
-st.write("Student Performance Dashboard + ML")
+else:
+    st.warning("Upload dataset to activate AI system")
