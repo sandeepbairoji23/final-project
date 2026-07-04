@@ -116,9 +116,10 @@ st.sidebar.markdown("---")
 
 api_key = st.sidebar.text_input(
     "🔑 Claude API Key (optional)",
-    type="",
+    type="password",
     help="Leave blank for rule-based bot"
 )
+
 
 # ---------------- HOME ----------------
 if page == "🏠 Home":
