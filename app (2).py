@@ -164,7 +164,7 @@ page = st.sidebar.radio("Go to:", [
 
 st.sidebar.markdown("---")
 api_key = st.sidebar.text_input("🔑 Claude API Key (optional)", type="password",
-                                 help="Leave blank to still use the app with a simple fallback.")
+                                 help="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")
 st.sidebar.caption("No key needed — RAG & Chatbot work without one too.")
 
 # ---------------------------------------------------------------------------
