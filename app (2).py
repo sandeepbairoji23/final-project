@@ -106,6 +106,15 @@ def get_sentiment(text):
     return "Neutral 😐"
 
 
+def extract_text(resp):
+    """
+    Claude Sonnet 5 uses adaptive thinking, so resp.content can include a
+    ThinkingBlock before the actual text reply. This pulls out only the
+    real text block instead of blindly assuming content[0] is text.
+    """
+    return next((block.text for block in resp.content if block.type == "text"), "")
+
+
 # ---------------------------------------------------------------------------
 # DATABASE (SQLite) - loads your CSV data once, then remembers changes
 # ---------------------------------------------------------------------------
@@ -449,7 +458,8 @@ elif page == "🔍 RAG - Q&A":
                     messages=[{"role": "user", "content":
                                f"Using only this fact: '{best}', answer: {query}"}]
                 )
-                st.write("**Generated answer:**", resp.content[0].text)
+                answer = extract_text(resp)
+                st.write("**Generated answer:**", answer)
             except Exception as e:
                 st.warning(f"API error ({e}). Showing the fact directly instead.")
         else:
@@ -491,7 +501,7 @@ elif page == "💬 GenAI Chatbot":
                         model="claude-sonnet-5", max_tokens=250,
                         messages=[{"role": m["role"], "content": m["content"]} for m in st.session_state.chat]
                     )
-                    reply = resp.content[0].text
+                    reply = extract_text(resp)
                 except Exception as e:
                     reply = f"(API error: {e}) " + rule_bot(user_msg)
             else:
