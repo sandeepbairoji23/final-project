@@ -136,7 +136,7 @@ page = st.sidebar.radio("Go to:", [
     " NLP - Feedback",
     " RAG - Q&A",
     " GenAI Chatbot",
-    " Topics Covered",
+    
 ])
 
 st.sidebar.markdown("---")
@@ -478,35 +478,3 @@ elif page == " GenAI Chatbot":
             st.session_state.chat.append({"role": "assistant", "content": reply})
 
 
-# TOPICS COVERED
-
-elif page == " Topics Covered":
-    st.title(" Topics Covered — Revision Sheet")
-    topics = {
-        "Python & Pandas": "Reading data, DataFrames, functions — used everywhere in this app.",
-        "SQLite Database": "Real database storage: INSERT, SELECT, DELETE.",
-        "EDA": "Understanding data using .describe() and charts before modelling.",
-        "Data Preprocessing": "Cleaning & encoding data (e.g., text to numbers) before ML.",
-        "Supervised Learning - Classification": "Predicting a category (Grade) from labeled data.",
-        "Supervised Learning - Regression": "Predicting a number (Science score) from labeled data.",
-        "Unsupervised Learning - Clustering": "Grouping students by similarity with NO labels (KMeans).",
-        "Overfitting vs Underfitting": "Overfitting = model memorizes training data but fails on new data. "
-                                        "Underfitting = model is too simple to learn the pattern at all.",
-        "Model Evaluation": "Accuracy, Confusion Matrix, Mean Absolute Error.",
-        "NLP": "Cleaning text, tokenizing, and sentiment analysis.",
-        "TF-IDF & Cosine Similarity": "Turning text into numbers to measure similarity (used in RAG).",
-        "RAG": "Retrieve a fact, then let an LLM generate a grounded answer.",
-        "GenAI / LLMs": "Using Claude's API to generate human-like text.",
-        "Streamlit": "Turns this Python script into an interactive website.",
-    }
-    for t, e in topics.items():
-        with st.expander(f" {t}"):
-            st.write(e)
-
-    st.success(
-        "\"I built a Streamlit app on my own student dataset. It stores data in "
-        "SQLite, explores it with EDA, uses Classification to predict Grade, "
-        "Regression to predict a score, and Clustering to group students without "
-        "labels. It also analyzes feedback with NLP, answers questions with a RAG "
-        "pipeline, and includes a GenAI chatbot powered by the Claude API.\""
-    )
