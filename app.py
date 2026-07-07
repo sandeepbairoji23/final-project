@@ -88,7 +88,14 @@ def extract_text(resp):
 
 @st.cache_resource
 def get_connection():
-    return sqlite3.connect("students.db", check_same_thread=False)
+    # Use an in-memory DB. Streamlit Community Cloud's app directory
+    # (/mount/src/...) is read-only, so writing a "students.db" file
+    # there fails with an OperationalError. We don't need the data to
+    # survive an app restart anyway (it's rebuilt from RAW_CSV below),
+    # and st.cache_resource keeps this exact connection object alive
+    # across reruns within the same session, so in-memory data persists
+    # for as long as the app process is running.
+    return sqlite3.connect(":memory:", check_same_thread=False)
 
 
 def init_db():
@@ -476,5 +483,3 @@ elif page == " GenAI Chatbot":
                 reply = rule_bot(user_msg)
             st.write(reply)
             st.session_state.chat.append({"role": "assistant", "content": reply})
-
-
