@@ -79,9 +79,13 @@ def extract_text(resp):
     Claude Sonnet 5 uses adaptive thinking, so resp.content can include a
     ThinkingBlock before the actual text reply. This pulls out only the
     real text block instead of blindly assuming content[0] is text.
+    Returns None (not "") if no text block was found, so callers can
+    tell "empty on purpose" apart from "nothing came back at all".
     """
-    return next((block.text for block in resp.content if block.type == "text"), "")
-
+    for block in resp.content:
+        if block.type == "text" and block.text.strip():
+            return block.text
+    return None
 
 
 # DATABASE (SQLite) - loads your CSV data once, then remembers changes
@@ -143,13 +147,24 @@ page = st.sidebar.radio("Go to:", [
     " NLP - Feedback",
     " RAG - Q&A",
     " GenAI Chatbot",
-    
+
 ])
 
 st.sidebar.markdown("---")
-api_key = st.sidebar.text_input(" Claude API Key (optional)", type="password",
-                                 help="Leave blank to still use the app with a simple fallback.")
-st.sidebar.caption("No key needed — RAG & Chatbot work without one too.")
+
+# Prefer a key stored in Streamlit secrets (safe, never shown on screen).
+# Falls back to the visible text input only if no secret is configured.
+# To use secrets: create .streamlit/secrets.toml with:
+#   ANTHROPIC_API_KEY = "sk-ant-..."
+_secret_key = st.secrets.get("ANTHROPIC_API_KEY", "") if hasattr(st, "secrets") else ""
+
+if _secret_key:
+    api_key = _secret_key
+    st.sidebar.success(" Using API key from Streamlit secrets.")
+else:
+    api_key = st.sidebar.text_input(" Claude API Key (optional)", type="password",
+                                     help="Leave blank to still use the app with a simple fallback.")
+    st.sidebar.caption("No key needed — RAG & Chatbot work without one too.")
 
 
 # HOME
@@ -434,9 +449,13 @@ elif page == " RAG - Q&A":
                                f"Using only this fact: '{best}', answer: {query}"}]
                 )
                 answer = extract_text(resp)
-                st.write("**Generated answer:**", answer)
+                if answer:
+                    st.write("**Generated answer:**", answer)
+                else:
+                    st.warning("The model returned no text content — showing the retrieved fact only.")
             except Exception as e:
-                st.warning(f"API error ({e}). Showing the fact directly instead.")
+                st.error(f"API call failed: {e}")
+                st.info("Showing the retrieved fact directly instead.")
         else:
             st.caption("Add a Claude API key in the sidebar for a naturally generated answer.")
 
@@ -477,8 +496,11 @@ elif page == " GenAI Chatbot":
                         messages=[{"role": m["role"], "content": m["content"]} for m in st.session_state.chat]
                     )
                     reply = extract_text(resp)
+                    if not reply:
+                        reply = "(Model returned no text content) " + rule_bot(user_msg)
                 except Exception as e:
-                    reply = f"(API error: {e}) " + rule_bot(user_msg)
+                    st.error(f"API call failed: {e}")
+                    reply = "(Falling back to rule-based bot) " + rule_bot(user_msg)
             else:
                 reply = rule_bot(user_msg)
             st.write(reply)
